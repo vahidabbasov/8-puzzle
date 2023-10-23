@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8 Puzzle Game</title>
+    <style>
+       body {
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: #f4f4f4;
+}
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(3, 80px);
+    gap: 10px;
+    padding: 20px;
+    background-color: #2c3e50;
+    border-radius: 10px;
+    box-shadow: 0px 0px 15px rgba(0,0,0,0.3);
+}
+
+.tile {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #ecf0f1;
+    font-weight: bold;
+    font-size: 24px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+    cursor: pointer;
+}
+
+.tile:hover {
+    background-color: #bdc3c7;
+}
+
+.blank {
+    background-color: #2c3e50;
+    cursor: default;
+}
+
+button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #3498db;
+    border: none;
+    color: #fff;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    outline: none;
+    box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+button:active {
+    background-color: #2c3e50;
+}
+.signature {
+    margin-top: 30px;
+    font-style: italic;
+    font-size: 14px;
+    color: #34495e;
+}
+
+    </style>
+</head>
+<body>
+    <div class="board"></div>
+    <button onclick="shuffle()">Shuffle</button>
+    <button onclick="solve()">Solve</button>
+    <div class="signature">© abbasovahid</div>
+
+
+    <script>
+        let boardState = [1, 2, 3, 4, 5, 6, 7, 8, 0];
+
+        function drawBoard(state) {
+            const board = document.querySelector('.board');
+            board.innerHTML = '';
+            state.forEach(num => {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                if (num === 0) {
+                    tile.classList.add('blank');
+                } else {
+                    tile.textContent = num;
+                }
+                board.appendChild(tile);
+            });
+        }
+
+        function getPossibleMoves(state) {
+            let index = state.indexOf(0);
+            let possibleMoves = [];
+
+            if (index % 3 > 0) possibleMoves.push(-1);  // left
+            if (index % 3 < 2) possibleMoves.push(1);   // right
+            if (index > 2) possibleMoves.push(-3);      // up
+            if (index < 6) possibleMoves.push(3);       // down
+
+            return possibleMoves;
+        }
+
+        function manhattanDistance(state) {
+            let distance = 0;
+            for (let i = 0; i < state.length; i++) {
+                if (state[i] !== 0) {
+                    let x = i % 3;
+                    let y = Math.floor(i / 3);
+                    let goalX = (state[i]-1) % 3;
+                    let goalY = Math.floor((state[i]-1) / 3);
+
+                    distance += Math.abs(x - goalX) + Math.abs(y - goalY);
+                }
+            }
+            return distance;
+        }
+
+        function shuffle() {
+            // Simple shuffle logic
+            for(let i = 0; i < 100; i++) {
+                let moves = getPossibleMoves(boardState);
+                let move = moves[Math.floor(Math.random() * moves.length)];
+                let index = boardState.indexOf(0);
+                [boardState[index], boardState[index + move]] = [boardState[index + move], boardState[index]];
+            }
+            drawBoard(boardState);
+        }
+
+        function solve() {
+    // Each state will have format: {state: [], f: 0, g: 0, parent: null}
+    let startState = {
+        state: boardState.slice(),
+        f: manhattanDistance(boardState),
+        g: 0,
+        parent: null
+    };
+
+    let openList = [startState];
+    let closedList = [];
+    let goal = [1, 2, 3, 4, 5, 6, 7, 8, 0];
+
+    while (openList.length) {
+        // Sort open list by f value, then get state with smallest f value
+        openList.sort((a, b) => a.f - b.f);
+        let currentState = openList.shift();
+
+        // If this state is the goal, we're done
+        if (arraysEqual(currentState.state, goal)) {
+            reconstructPath(currentState);
+            return;
+        }
+
+        // Generate successors and set their g, h, and f values
+        let successors = generateSuccessors(currentState);
+
+        for (let successor of successors) {
+            if (inClosedList(successor.state, closedList)) continue;
+
+            let g = currentState.g + 1; // 1 is the cost to move from one state to another
+            let h = manhattanDistance(successor.state);
+            let f = g + h;
+
+            if (!inOpenList(successor.state, openList) || f < successor.f) {
+                successor.f = f;
+                successor.g = g;
+                successor.parent = currentState;
+
+                if (!inOpenList(successor.state, openList)) {
+                    openList.push(successor);
+                }
+            }
+        }
+
+        closedList.push(currentState);
+    }
+
+    alert('No solution found.');
+}
+
+function generateSuccessors(stateObj) {
+    let successors = [];
+    let moves = getPossibleMoves(stateObj.state);
+    for (let move of moves) {
+        let newState = stateObj.state.slice();
+        let index = newState.indexOf(0);
+        [newState[index], newState[index + move]] = [newState[index + move], newState[index]];
+        successors.push({
+            state: newState,
+            parent: stateObj,
+            f: 0,
+            g: 0
+        });
+    }
+    return successors;
+}
+
+function inClosedList(state, closedList) {
+    return closedList.some(s => arraysEqual(s.state, state));
+}
+
+function inOpenList(state, openList) {
+    return openList.some(s => arraysEqual(s.state, state));
+}
+
+function arraysEqual(arr1, arr2) {
+    return arr1.length === arr2.length && arr1.every((v, i) => v === arr2[i]);
+}
+
+function reconstructPath(stateObj) {
+    let path = [];
+    while (stateObj) {
+        path.unshift(stateObj.state);
+        stateObj = stateObj.parent;
+    }
+    animatePath(path);
+}
+
+function animatePath(path) {
+    if (path.length) {
+        boardState = path.shift();
+        drawBoard(boardState);
+        setTimeout(() => animatePath(path), 500);
+    }
+}
+
+
+        drawBoard(boardState);
+
+
+
+
+    </script>
+</body>
+</html>
