@@ -75,6 +75,12 @@ button:active {
     font-size: 14px;
     color: #34495e;
 }
+#timer {
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
 
     </style>
 </head>
@@ -82,6 +88,8 @@ button:active {
     <div class="board"></div>
     <button onclick="shuffle()">Shuffle</button>
     <button onclick="solve()">Solve</button>
+    <button onclick="solveBFS()">Solve with BFS</button>
+    <button onclick="solveDFS()">Solve with DFS</button>
     <div class="signature">© abbasovahid</div>
 
 
@@ -131,6 +139,7 @@ button:active {
         }
 
         function shuffle() {
+         
             // Simple shuffle logic
             for(let i = 0; i < 100; i++) {
                 let moves = getPossibleMoves(boardState);
@@ -142,6 +151,7 @@ button:active {
         }
 
         function solve() {
+      
     // Each state will have format: {state: [], f: 0, g: 0, parent: null}
     let startState = {
         state: boardState.slice(),
@@ -222,6 +232,7 @@ function arraysEqual(arr1, arr2) {
 }
 
 function reconstructPath(stateObj) {
+
     let path = [];
     while (stateObj) {
         path.unshift(stateObj.state);
@@ -237,9 +248,80 @@ function animatePath(path) {
         setTimeout(() => animatePath(path), 500);
     }
 }
+function solveBFS() {
+
+            let startState = {
+                state: boardState.slice(),
+                parent: null
+            };
+            let queue = [startState];
+            let visited = [boardState.toString()];
+            let goal = [1, 2, 3, 4, 5, 6, 7, 8, 0];
+            
+            while (queue.length) {
+                let currentState = queue.shift();
+                
+                if (arraysEqual(currentState.state, goal)) {
+                    reconstructPath(currentState);
+                    return;
+                }
+
+                let successors = generateSuccessors(currentState);
+                for (let successor of successors) {
+                    if (!visited.includes(successor.state.toString())) {
+                        visited.push(successor.state.toString());
+                        queue.push(successor);
+                    }
+                }
+            }
+            
+            alert('No solution found.');
+        }
+
+        function solveDFS() {
+    
+    let startState = {
+        state: boardState.slice(),
+        parent: null,
+        depth: 0
+    };
+    let stack = [startState];
+    let visited = [boardState.toString()];
+    let goal = [1, 2, 3, 4, 5, 6, 7, 8, 0];
+    let maxDepth = 80; // You might need to adjust this value
+    
+    while (stack.length) {
+        let currentState = stack.pop();
+        
+        if (arraysEqual(currentState.state, goal)) {
+            reconstructPath(currentState);
+            return;
+        }
+
+        if (currentState.depth < maxDepth) {
+            let successors = generateSuccessors(currentState);
+            for (let successor of successors) {
+                successor.depth = currentState.depth + 1;
+                if (!visited.includes(successor.state.toString())) {
+                    visited.push(successor.state.toString());
+                    stack.push(successor);
+                }
+            }
+        }
+    }
+    
+    alert('No solution found.');
+}
 
 
         drawBoard(boardState);
+
+        let timerInterval;
+let startTime;
+let solving = false;
+
+
+
 
 
 
